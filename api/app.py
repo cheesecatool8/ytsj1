@@ -9,6 +9,7 @@ import logging
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import requests  # 添加requests库用于验证Turnstile
 
 # 配置日志
 logging.basicConfig(
@@ -22,6 +23,39 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)  # 启用CORS支持
+
+# Cloudflare Turnstile配置
+TURNSTILE_SECRET_KEY = "0x4AAAAAABAtmxqdrLhuOrUrt_fffgP9Tf0"  # 替换为您的密钥
+TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+
+# 验证Turnstile Token
+def verify_turnstile_token(token):
+    """验证Turnstile令牌的有效性"""
+    try:
+        if not token:
+            logger.warning("未提供Turnstile令牌")
+            return False
+            
+        # 向Cloudflare发送验证请求
+        data = {
+            "secret": TURNSTILE_SECRET_KEY,
+            "response": token,
+            "remoteip": request.remote_addr
+        }
+        
+        response = requests.post(TURNSTILE_VERIFY_URL, data=data)
+        result = response.json()
+        
+        if result.get("success"):
+            logger.info("Turnstile验证成功")
+            return True
+        else:
+            logger.warning(f"Turnstile验证失败: {result.get('error-codes')}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Turnstile验证出错: {str(e)}")
+        return False
 
 # 添加请求限制
 limiter = Limiter(
@@ -140,6 +174,12 @@ def test_key():
             logger.error("未提供API密钥")
             return jsonify({'success': False, 'error': '请提供API密钥'}), 400
             
+        # 验证Turnstile令牌
+        token = data.get('turnstileToken')
+        if not verify_turnstile_token(token):
+            logger.warning("Turnstile验证失败")
+            return jsonify({'success': False, 'error': '人机验证失败，请重试'}), 403
+            
         api_key = data['apiKey'].strip()
         logger.info(f"测试API密钥: {api_key[:5]}...{api_key[-5:] if len(api_key) > 10 else ''}")
         
@@ -166,6 +206,12 @@ def search():
         data = request.get_json()
         if not data:
             return jsonify({'error': '无法解析JSON数据'}), 400
+        
+        # 验证Turnstile令牌
+        token = data.get('turnstileToken')
+        if not verify_turnstile_token(token):
+            logger.warning("Turnstile验证失败")
+            return jsonify({'success': False, 'error': '人机验证失败，请重试'}), 403
         
         search_type = data.get('type')
         query = data.get('query', '').strip()

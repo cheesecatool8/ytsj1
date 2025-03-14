@@ -9,10 +9,14 @@ const videosPerPage = 100;
 // Turnstile验证状态
 let turnstileVerified = false;
 
+// 全局变量存储Turnstile令牌
+let turnstileToken = '';
+
 // 当Turnstile验证成功时调用
 function onTurnstileVerified(token) {
     console.log("Turnstile验证成功");
     turnstileVerified = true;
+    turnstileToken = token; // 保存token
     document.getElementById('turnstileMessage').style.display = 'none';
 }
 
@@ -51,14 +55,13 @@ function saveApiKey() {
     
     // 保存到本地存储
     localStorage.setItem('youtube_api_key', apiKey);
-    alert("API密钥已保存");
     
-    // 测试API密钥
-    testApiKey(apiKey);
+    // 测试API密钥，包含Turnstile令牌
+    testApiKey(apiKey, turnstileToken);
 }
 
 // 测试API密钥
-async function testApiKey(key) {
+async function testApiKey(key, token) {
     try {
         console.log("测试API密钥:", key);
         
@@ -71,7 +74,10 @@ async function testApiKey(key) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ apiKey: key })
+            body: JSON.stringify({ 
+                apiKey: key,
+                turnstileToken: token
+            })
         });
         
         console.log("收到响应状态:", response.status);
@@ -153,7 +159,8 @@ async function searchVideos() {
                 type: searchType,
                 query: query,
                 maxResults: videoCount,
-                sortBy: 'date' // 默认按时间排序
+                sortBy: 'date', // 默认按时间排序
+                turnstileToken: turnstileToken // 添加Turnstile令牌
             })
         });
         
