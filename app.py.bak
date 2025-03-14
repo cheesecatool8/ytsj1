@@ -1,0 +1,122 @@
+# 这是app.py的备份文件
+# 所有功能已移动到api/app.py中
+# 保留这个备份仅用于参考
+
+from flask import Flask, render_template, request, jsonify, send_from_directory
+from googleapiclient.discovery import build
+from datetime import datetime
+import json
+import traceback
+from googleapiclient.errors import HttpError
+import os
+import logging
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+CORS(app)  # 启用CORS支持
+
+# 添加请求限制
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+def test_api_key(api_key):
+    """测试API密钥是否有效"""
+    try:
+        logger.info(f"开始测试API密钥...")
+        
+        # 创建YouTube客户端
+        youtube = build(
+            'youtube',
+            'v3',
+            developerKey=api_key,
+            cache_discovery=False
+        )
+        
+        # 测试API密钥
+        request = youtube.videos().list(
+            part='snippet',
+            id='dQw4w9WgXcQ'  # 使用一个确定存在的视频ID进行测试
+        )
+        response = request.execute()
+        
+        if response:
+            logger.info("API密钥测试成功")
+            return True, "API密钥有效"
+            
+    except HttpError as e:
+        error_content = json.loads(e.content)
+        error_message = error_content.get('error', {}).get('message', str(e))
+        logger.error(f"API密钥测试失败: {error_message}")
+        
+        if 'quota' in error_message.lower():
+            return False, "API配额已用完，请等待重置或使用新的API密钥"
+        else:
+            return False, f"API密钥无效: {error_message}"
+            
+    except Exception as e:
+        logger.error(f"API密钥测试出现未知错误: {str(e)}")
+        return False, f"测试出错: {str(e)}"
+
+def create_youtube_client(api_key):
+    """创建YouTube API客户端"""
+    try:
+        # 首先测试API密钥
+        is_valid, message = test_api_key(api_key)
+        if not is_valid:
+            raise Exception(message)
+            
+        # 创建YouTube客户端（无代理）
+        youtube = build(
+            'youtube',
+            'v3',
+            developerKey=api_key,
+            cache_discovery=False
+        )
+        
+        return youtube
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"创建YouTube客户端时出错: {error_msg}")
+        raise Exception(error_msg)
+
+@app.route('/')
+def home():
+    return """
+    <html>
+    <head>
+        <title>芝士猫YouTube数据采集工具</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
+            h1 { color: #333; }
+            .nav { margin: 20px; }
+            .nav a { margin: 0 10px; text-decoration: none; color: #0066cc; }
+        </style>
+    </head>
+    <body>
+        <h1>芝士猫YouTube数据采集工具</h1>
+        <p>服务已成功部署！</p>
+        <div class="nav">
+            <a href="/health">查看服务状态</a> | 
+            <a href="/hello">测试页面</a>
+        </div>
+    </body>
+    </html>
+    """
+
+# ... 其他路由和函数 ... 

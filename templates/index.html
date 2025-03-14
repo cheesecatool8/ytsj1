@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芝士猫YouTube数据采集工具</title>
+    <!-- 添加favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="shortcut icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="芝士猫" class="logo-image">
+            芝士猫 YouTube数据采集工具
+        </h1>
+        
+        <!-- API密钥设置部分 -->
+        <div class="section">
+            <h2>API密钥设置</h2>
+            <div class="api-key-input">
+                <input type="text" id="apiKey" placeholder="输入YouTube Data API密钥">
+                <button onclick="saveApiKey()" class="save-btn">保存密钥</button>
+            </div>
+            <div id="message" class="message" style="display: none;"></div>
+            <div class="api-instructions">
+                <p>请先设置YouTube API密钥才能使用搜索功能。</p>
+                <h3>如何获取API密钥：</h3>
+                <ol>
+                    <li>访问 <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                    <li>创建新项目或选择现有项目</li>
+                    <li>在左侧菜单中选择"API和服务" > "启用的API和服务"</li>
+                    <li>点击顶部的"启用API和服务"</li>
+                    <li>搜索并启用 "YouTube Data API v3"</li>
+                    <li>在左侧菜单中选择"凭据"</li>
+                    <li>点击"创建凭据" > "API密钥"</li>
+                    <li>复制生成的API密钥并粘贴到上面的输入框中</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 视频搜索部分 -->
+        <div class="section">
+            <h2>视频搜索</h2>
+            <div class="search-controls">
+                <select id="searchType">
+                    <option value="keyword">关键词搜索</option>
+                    <option value="channel">频道搜索</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="输入关键词或频道链接">
+                <select id="videoCount" class="video-count-select">
+                    <option value="50">前50条</option>
+                    <option value="100" selected>前100条</option>
+                    <option value="150">前150条</option>
+                    <option value="200">前200条</option>
+                </select>
+                <button onclick="searchVideos()" class="search-btn">搜索</button>
+            </div>
+        </div>
+
+        <!-- 加载动画 -->
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>正在处理中...</p>
+        </div>
+
+        <!-- 排序选项 -->
+        <div id="sortOptions" class="sort-options" style="display: none;">
+            <button onclick="sortVideos('date')" class="sort-btn">
+                <i class="fas fa-calendar-alt"></i> 按时间排序
+            </button>
+            <button onclick="sortVideos('viewCount')" class="sort-btn">
+                <i class="fas fa-eye"></i> 按观看次数排序
+            </button>
+            <button onclick="sortVideos('likeCount')" class="sort-btn">
+                <i class="fas fa-thumbs-up"></i> 按点赞数排序
+            </button>
+            <button onclick="sortVideos('commentCount')" class="sort-btn">
+                <i class="fas fa-comments"></i> 按评论数排序
+            </button>
+        </div>
+
+        <!-- 结果显示部分 -->
+        <div id="results" class="results-section"></div>
+        
+        <!-- 分页控件 -->
+        <div id="pagination" class="pagination-container"></div>
+    </div>
+</body>
+</html> 
