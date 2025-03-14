@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>芝士猫YouTube数据采集工具</title>
+    <title>芝士猫YouTube视频数据分析平台</title>
     <!-- 添加favicon -->
     <link rel="icon" type="image/png" href="static/images/favicon.png">
     <link rel="shortcut icon" type="image/png" href="static/images/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="static/css/style.css">
     <script src="static/js/main.js"></script>
+    <!-- Cloudflare Turnstile 客户端脚本 -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
     <div class="container">
         <h1>
             <img src="static/images/logo.png" alt="芝士猫" class="logo-image">
-            芝士猫 YouTube数据采集工具
+            芝士猫 YouTube视频数据分析
         </h1>
         
         <!-- API密钥设置部分 -->
@@ -25,9 +27,14 @@
                 <input type="text" id="apiKey" placeholder="输入YouTube Data API密钥">
                 <button onclick="saveApiKey()" class="save-btn">保存密钥</button>
             </div>
+             <!-- Cloudflare Turnstile 验证组件 -->
+            <div class="turnstile-container" style="margin: 15px 0;">
+                <div class="cf-turnstile" data-sitekey="请替换为您的Turnstile站点密钥" data-callback="onTurnstileVerified"></div>
+                <div id="turnstileMessage" style="color: red; display: none; margin-top: 5px;">请完成人机验证</div>
+            </div>
             <div id="message" class="message" style="display: none;"></div>
             <div class="api-instructions">
-                <p>请先设置YouTube API密钥才能使用搜索功能。</p>
+                <p>芝士猫YouTube视频数据分析可以获取关于YouTube视频的详细信息。你可以通过关键词或者频道搜索，第一时间跟踪对应关键词或者频道的最新发布视频的统计数据，可以按时间、点赞数、评论数、播放量进行自行排序。请先设置YouTube API密钥才能使用搜索功能。</p>
                 <h3>如何获取API密钥：</h3>
                 <ol>
                     <li>访问 <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
