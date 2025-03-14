@@ -6,6 +6,16 @@ let currentVideos = [];
 let currentPage = 1;
 const videosPerPage = 100;
 
+// Turnstile验证状态
+let turnstileVerified = false;
+
+// 当Turnstile验证成功时调用
+function onTurnstileVerified(token) {
+    console.log("Turnstile验证成功");
+    turnstileVerified = true;
+    document.getElementById('turnstileMessage').style.display = 'none';
+}
+
 // 页面加载完成后执行
 window.onload = function() {
     console.log("页面加载完成");
@@ -30,6 +40,12 @@ function saveApiKey() {
     apiKey = inputElement.value.trim();
     if (!apiKey) {
         alert("请输入API密钥");
+        return;
+    }
+    
+    // 验证Turnstile
+    if (!turnstileVerified) {
+        document.getElementById('turnstileMessage').style.display = 'block';
         return;
     }
     
@@ -91,48 +107,41 @@ async function testApiKey(key) {
 
 // 搜索视频
 async function searchVideos() {
-    const keyInput = document.getElementById('apiKey');
-    const queryInput = document.getElementById('searchInput');
-    const videoCountSelect = document.getElementById('videoCount');
+    console.log("开始搜索视频");
     
-    if (!keyInput || !queryInput) {
-        console.error("找不到输入元素");
-        return;
-    }
-    
-    // 添加搜索提示文字
-    const searchContainer = queryInput.parentElement;
-    if (!document.querySelector('.search-hint')) {
-        const hintElement = document.createElement('div');
-        hintElement.className = 'search-hint';
-        hintElement.textContent = '芝士猫特别提醒：关键词搜索"#关键词"或"关键词"，频道搜索格式"@频道名"。有任何疑问请联系芝士猫邮箱:imluluj8@outlook.com';
-        searchContainer.appendChild(hintElement);
-    }
-
-    const key = keyInput.value.trim();
-    const query = queryInput.value.trim();
-    const maxResults = parseInt(videoCountSelect.value);
-    
-    if (!key) {
-        alert("请先设置API密钥");
-        return;
-    }
+    // 获取搜索类型和查询
+    const searchType = document.getElementById('searchType').value;
+    const query = document.getElementById('searchInput').value.trim();
+    const videoCount = parseInt(document.getElementById('videoCount').value);
     
     if (!query) {
-        alert("请输入搜索内容");
+        alert("请输入搜索关键词或频道链接");
         return;
     }
     
+    // 检查API密钥
+    if (!apiKey) {
+        alert("请先设置YouTube API密钥");
+        return;
+    }
+    
+    // 验证Turnstile
+    if (!turnstileVerified) {
+        document.getElementById('turnstileMessage').style.display = 'block';
+        alert("请完成人机验证");
+        return;
+    }
+    
+    // 显示加载动画
+    document.getElementById('loading').style.display = 'flex';
+    
+    // 隐藏之前的结果和分页
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('pagination').innerHTML = '';
+    document.getElementById('sortOptions').style.display = 'none';
+    
     try {
-        console.log("搜索视频:", query, "数量限制:", maxResults);
-        
-        // 显示加载中
-        const loadingElement = document.getElementById('loading');
-        if (loadingElement) {
-            loadingElement.style.display = 'flex';
-        }
-        
-        const searchType = document.getElementById('searchType')?.value || 'keyword';
+        console.log("搜索视频:", query, "数量限制:", videoCount);
         
         const response = await fetch('/search', {
             method: 'POST',
@@ -140,10 +149,10 @@ async function searchVideos() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                apiKey: key,
+                apiKey: apiKey,
                 type: searchType,
                 query: query,
-                maxResults: maxResults,
+                maxResults: videoCount,
                 sortBy: 'date' // 默认按时间排序
             })
         });
@@ -152,9 +161,7 @@ async function searchVideos() {
         console.log("搜索结果:", data);
         
         // 隐藏加载中
-        if (loadingElement) {
-            loadingElement.style.display = 'none';
-        }
+        document.getElementById('loading').style.display = 'none';
         
         // 处理结果
         const resultsElement = document.getElementById('results');
@@ -167,7 +174,7 @@ async function searchVideos() {
         
         if (response.ok && data.videos && data.videos.length > 0) {
             // 限制视频数量
-            currentVideos = data.videos.slice(0, maxResults);
+            currentVideos = data.videos.slice(0, videoCount);
             // 显示排序选项
             if (sortOptionsElement) {
                 sortOptionsElement.style.display = 'flex';
@@ -190,10 +197,7 @@ async function searchVideos() {
         alert("搜索出错: " + error.message);
         
         // 隐藏加载中
-        const loadingElement = document.getElementById('loading');
-        if (loadingElement) {
-            loadingElement.style.display = 'none';
-        }
+        document.getElementById('loading').style.display = 'none';
     }
 }
 
